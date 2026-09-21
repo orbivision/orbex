@@ -1,0 +1,33 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node scripts/hooks/session-start.mjs",
+            "timeout": 15,
+            "statusMessage": "Checking workspace…"
+          },
+          {
+            "type": "command",
+            "command": "node scripts/hooks/origin-check.mjs",
+            "async": true,
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node scripts/hooks/stop.mjs",
+            "timeout": 15
+          }
+        ]
+      }
+    ]
+  }
+}

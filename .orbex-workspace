@@ -1,0 +1,14 @@
+# Marker: this directory is an orbex workspace root.
+#
+# scripts/lib/workspace.mjs walks up from the current working directory looking for this file,
+# so the machinery operates on THIS tree even when the scripts are symlinks into a sibling
+# orbex clone. Without it, Node's symlink resolution would make every script report the
+# machinery repo as its root.
+#
+# Optional settings, `key: value`:
+#
+#   ecosystem_root: ../some-dir      # the repos the work is actually about
+#   ecosystem_doc:  context/arch.md  # linked into ecosystem_root as CLAUDE.md
+#
+# This repo declares neither: it is a workspace that governs nothing but itself, which is a
+# valid state and the one the checks treat as "absent" rather than "broken".
