@@ -247,6 +247,10 @@ const CHECKS = [
       const findings = [];
       const dir = path.join(REPO, '.agents', 'skills');
       const want = skillDirs();
+      // Nothing to link is not a defect: a workspace may carry no skills of its own and rely
+      // entirely on the ones the machinery repo provides. Demanding the directory anyway made
+      // a freshly-created workspace red on its first doctor run (ORBI-81).
+      if (want.length === 0) return { findings: [], summary: 'no skills in this workspace' };
       if (!existsSync(dir)) {
         return {
           findings: [`.agents/skills/ is missing — Codex discovers project skills there (${want.length} to link)`],
@@ -515,7 +519,28 @@ const CHECKS = [
           }
         }
       };
-      for (const d of ['scripts', 'scripts/hooks', 'context', '.claude/skills']) scan(d);
+      // A workspace may link the whole directory (`ln -s ../orbex/scripts scripts`) or each
+      // file inside it. Check both, or the whole-directory form reads as "self-contained".
+      const consider = (rel) => {
+        const abs = path.join(REPO, rel);
+        let st; try { st = lstatSync(abs); } catch { return false; }
+        if (!st.isSymbolicLink()) return false;
+        if (!existsSync(abs)) { findings.push(`${rel}: DANGLING -> ${readlinkSafe(abs)}`); return true; }
+        const target = realpathSync(abs);
+        if (target.startsWith(REPO + path.sep)) return true;
+        links++;
+        let dir2 = target;
+        for (;;) {
+          if (existsSync(path.join(dir2, MARKER_NAME))) { roots.add(dir2); break; }
+          const up = path.dirname(dir2);
+          if (up === dir2) { roots.add(`(no marker above ${target})`); break; }
+          dir2 = up;
+        }
+        return true;
+      };
+      for (const d of ['scripts', 'scripts/hooks', 'context', '.claude/skills']) {
+        if (!consider(d)) scan(d);   // a linked directory is the answer; don't also scan inside it
+      }
 
       if (links === 0) return { findings, summary: 'self-contained — no machinery consumed' };
       if (roots.size > 1) {
@@ -578,6 +603,11 @@ const CHECKS = [
       const st = contentState(path.join('context', 'memory'));
       if (st.absent) return { findings: [], summary: 'no project memory in this workspace' };
       const dir = path.join(REPO, 'context', 'memory');
+      // An empty memory directory is memory not in use yet, not a missing index. Demanding
+      // MEMORY.md there made a freshly-created workspace red on its first run (ORBI-81).
+      if (readdirSync(dir).filter((f) => f.endsWith('.md')).length === 0) {
+        return { findings: [], summary: 'no memory files yet' };
+      }
       const index = path.join(dir, 'MEMORY.md');
       if (!existsSync(index)) return { findings: [`${rel(index)} is missing`], summary: 'no index' };
 

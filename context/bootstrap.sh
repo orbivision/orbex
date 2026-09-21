@@ -18,8 +18,17 @@
 # rather than overwritten. Does NOT clone repos or create .env files — see README.md.
 set -euo pipefail
 
-CTX="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"   # <workspace>/context
-REPO="$(cd "$CTX/.." && pwd)"                          # <workspace>
+# The workspace to wire up. Resolved the SAME way the node scripts resolve it — from the
+# .orbex-workspace marker above the current directory — and NOT from this script's own
+# location, which is the machinery repo whenever you invoke it as `../orbex/context/bootstrap.sh`.
+# Getting that wrong silently bootstraps the machinery clone instead of your workspace, which is
+# exactly what happened the first time the published quickstart was tested (ORBI-81).
+REPO="$(node --input-type=module -e "
+  import { resolveWorkspace } from '$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/scripts/lib/workspace.mjs';
+  process.stdout.write(resolveWorkspace().root);
+")"
+CTX="$REPO/context"
+mkdir -p "$CTX"
 
 # The ecosystem this workspace governs, and the doc linked into it — both declared in the
 # .orbex-workspace marker, or absent, which is valid: a workspace may govern nothing but

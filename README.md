@@ -48,18 +48,30 @@ No dependencies, no `package.json`, no build. Node and git are the whole toolcha
 
 ## Quickstart
 
+Clone this repo, then create a workspace **beside** it:
+
 ```bash
 git clone https://github.com/orbivision/orbex.git
 mkdir my-workspace && cd my-workspace && git init
-touch .orbex-workspace
-mkdir -p projects context/memory
-ln -s ../orbex/scripts scripts          # or link per file; see CLAUDE.md
+
+touch .orbex-workspace                       # the marker: this is a workspace root
+mkdir -p projects context/memory .claude .codex
+ln -s ../orbex/scripts scripts               # consume the machinery
+cp ../orbex/.claude/settings.json .claude/   # hook registration, Claude Code
+cp ../orbex/.codex/hooks.json .codex/        # hook registration, Codex
+printf '# CLAUDE.md\n\n**Project key: `KEY`.**\n' > CLAUDE.md
+ln -s CLAUDE.md AGENTS.md                    # one document, both hosts
+
+node scripts/build-project-index.mjs
 bash ../orbex/context/bootstrap.sh
-node scripts/doctor.mjs
+node scripts/doctor.mjs                      # expect: all checks passed
 ```
 
-Then write a `CLAUDE.md` in your workspace declaring its project key, and start with `/o-plan`.
-[`CLAUDE.md`](CLAUDE.md) in this repo is the full reference.
+`bootstrap.sh` finds your workspace from the marker above your current directory, so run it
+**from inside the workspace** — that is what makes `../orbex/...` the right thing to type.
+
+Then fill in your `CLAUDE.md` — your project key, the facts about your codebase an agent should
+always have — and start with `/o-plan`. [`CLAUDE.md`](CLAUDE.md) here is the full reference.
 
 ## The skills
 
