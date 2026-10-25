@@ -1,4 +1,9 @@
-# orbex
+<h1>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/orbex-logo-on-dark.svg">
+    <img src="assets/orbex-logo.svg" alt="orbex" width="320">
+  </picture>
+</h1>
 
 A small, dependency-free workspace for working with an AI coding agent over a long time —
 a git repo that holds the **process** for a project, sitting beside the repos that hold the code.
