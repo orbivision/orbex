@@ -23,7 +23,7 @@ get confused with each other, and the confusion is expensive: a procedure writte
 ignored, a fact written as a procedure never gets read, and anything maintained separately from
 the work it describes silently goes stale.
 
-orbex keeps them apart, and gives each one a home that a session can find automatically:
+Orbex keeps them apart, and gives each one a home that a session can find automatically:
 
 | | Lives in | Changes when |
 |---|---|---|
@@ -38,7 +38,7 @@ orbex keeps them apart, and gives each one a home that a session can find automa
   code is touched.** Plans are append-only, because what a plan got wrong is the most valuable
   thing in it.
 - **Versioned agent memory.** Claude Code keeps project memory in a directory outside your repo,
-  keyed to an absolute path. orbex symlinks it into your workspace, so memory is in git — it
+  keyed to an absolute path. Orbex symlinks it into your workspace, so memory is in git — it
   travels between machines and gets committed with the work.
 - **Skills that travel.** Both hosts only discover project skills at or below the session's
   directory, so a session started in your code repo sees none of them. `bootstrap.sh` links each

@@ -1,8 +1,8 @@
-# Marker: this directory is an orbex workspace root.
+# Marker: this directory is an Orbex workspace root.
 #
 # scripts/lib/workspace.mjs walks up from the current working directory looking for this file,
 # so the machinery operates on THIS tree even when the scripts are symlinks into a sibling
-# orbex clone. Without it, Node's symlink resolution would make every script report the
+# Orbex clone. Without it, Node's symlink resolution would make every script report the
 # machinery repo as its root.
 #
 # Optional settings, `key: value`:

@@ -1,6 +1,6 @@
-# CLAUDE.md — orbex
+# CLAUDE.md — Orbex
 
-**orbex is a workspace for an AI coding agent: a git repo that holds the *process* for a
+**Orbex is a workspace for an AI coding agent: a git repo that holds the *process* for a
 project, sitting beside the repos that hold the code.**
 
 This repo is the machinery — the scripts, the skills and the conventions. A *workspace* is a
