@@ -1,7 +1,7 @@
 <h1>
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="assets/orbex-logo-on-dark.svg">
-    <img src="assets/orbex-logo.svg" alt="orbex" width="320">
+    <img src="assets/orbex-logo.svg" alt="Orbex" width="320">
   </picture>
 </h1>
 
