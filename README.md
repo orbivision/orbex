@@ -90,6 +90,7 @@ always have — and start with `/o-plan`. [`CLAUDE.md`](CLAUDE.md) here is the f
 |---|---|
 | [`o-plan`](.claude/skills/o-plan/SKILL.md) | Start a numbered project and **stop for approval** before touching code |
 | [`o-next`](.claude/skills/o-next/SKILL.md) | Merge projects, backlog, GitHub Issues and overdue memory into one prioritized view |
+| [`o-dashboard`](.claude/skills/o-dashboard/SKILL.md) | Generate the [progress dashboard](#progress-dashboard) and open it in the browser |
 | [`o-ship`](.claude/skills/o-ship/SKILL.md) | Verify it actually shipped, log what the plan got wrong, reconcile memory, close out |
 | [`o-doctor`](.claude/skills/o-doctor/SKILL.md) | Reconcile the workspace against reality |
 
@@ -98,7 +99,7 @@ Your workspace adds its own — the ones that know about *your* deploys, tests a
 ## Progress dashboard
 
 ```bash
-node scripts/dashboard.mjs --open     # or --out file.html; --no-gh to skip the Issues inbox
+node scripts/dashboard.mjs --open     # or /o-dashboard; --out file.html; --no-gh to skip the inbox
 ```
 
 <img src="assets/dashboard-sample.png" alt="The dashboard rendered from the sample workspace: in-flight project cards, a weekly throughput chart, a cycle-time distribution and a project timeline" width="720">

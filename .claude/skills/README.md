@@ -30,12 +30,13 @@ of better.
 Write the traps, not just the steps. The steps are usually obvious in hindsight; the reason the
 obvious thing fails is not.
 
-## The four here
+## The five here
 
 | | |
 |---|---|
 | [`o-plan`](o-plan/SKILL.md) | Start a numbered project; stop for approval before touching code |
 | [`o-next`](o-next/SKILL.md) | One prioritized view across projects, backlog, Issues and overdue memory |
+| [`o-dashboard`](o-dashboard/SKILL.md) | Generate and open the progress dashboard — throughput, cycle time, timeline — rebuilt every time |
 | [`o-ship`](o-ship/SKILL.md) | Verify it shipped, log what the plan got wrong, reconcile memory, close out |
 | [`o-doctor`](o-doctor/SKILL.md) | Reconcile the workspace against reality |
 
