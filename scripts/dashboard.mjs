@@ -17,11 +17,13 @@
 // can't read as "empty" (the 2026-08-30 label-filter lesson); a chart that dropped them would
 // bring that failure back in a nicer font.
 //
-// Dependency-free, and the page needs no JavaScript: inline CSS, inline SVG, native <title>
-// tooltips, <details> table views. Light and dark follow prefers-color-scheme.
+// Dependency-free and self-contained: inline CSS, inline SVG (the Orbex logo is read from
+// ../assets and inlined), native <title> tooltips, <details> table views. Dark by default; the
+// only JavaScript is the light/dark toggle, which remembers the choice per browser. Without it
+// the page is simply dark, with every chart and table intact.
 
 import { execFileSync, spawn } from 'node:child_process';
-import { writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import path from 'node:path';
@@ -204,11 +206,31 @@ function timeline() {
 }
 
 // ---- sections -------------------------------------------------------------------
+// The logo comes from the machinery's own assets, so the page and the README can't disagree on
+// it. Its wordmark is black in the file; it's handed to CSS so each theme sets the ink
+// (#f2f2f2 on dark, as in orbex-logo-on-dark.svg). No file → plain text, never a broken page.
+function logo() {
+  try {
+    const svg = readFileSync(path.join(HERE, '..', 'assets', 'orbex-logo.svg'), 'utf8');
+    // Sized from its viewBox to a 44 px height. (The first attempt looked like a sizing bug and
+    // was really the charts' global `svg{width:100%}` rule catching the logo — now `.plot svg`.)
+    const [, , vw, vh] = (svg.match(/viewBox="([^"]+)"/)?.[1] ?? '0 0 3 1').split(/\s+/).map(Number);
+    const H = 44;
+    return svg
+      .replace(/\s(width|height)="[^"]*"/g, '')
+      .replace('<svg ', `<svg class="logo" role="img" aria-label="Orbex" width="${Math.round((H * vw) / vh)}" height="${H}" `)
+      .replace('fill="#000000"', 'class="wordmark"');
+  } catch {
+    return '<p class="logo-text">Orbex</p>';
+  }
+}
+
 function header() {
   const chips = STATUSES.filter((s) => counts[s]).map((s) => `<li class="chip ${s}"><b>${counts[s]}</b> ${s}</li>`).join('');
   const stamp = `Generated ${esc(new Date().toLocaleString('en', { dateStyle: 'medium', timeStyle: 'short' }))}` +
     (SHA ? ` from <code>${SHA}</code>${DIRTY ? ' + uncommitted changes' : ''}` : '');
-  return `<header><p class="eyebrow">Orbex workspace</p><h1>${esc(NAME)}</h1>
+  return `<header><div class="top">${logo()}<button class="theme" type="button" hidden></button></div>
+    <h1>${esc(NAME)}</h1>
     <p class="sub">${plural(projects.length, 'project')} · key <code>${esc(index.key ?? '—')}</code></p>
     <ul class="chips">${chips}</ul><p class="stamp">${stamp}. Regenerate to refresh — this page is never the source.</p></header>`;
 }
@@ -267,12 +289,13 @@ function problems() {
 
 // ---- page -----------------------------------------------------------------------
 const CSS = `
-:root{color-scheme:light;--page:#f9f9f7;--surface:#fcfcfb;--ink:#0b0b0b;--ink-2:#52514e;--muted:#6b6a66;--axis:#898781;--grid:#e1e0d9;--base:#c3c2b7;--ring:rgba(11,11,11,.10);
-  --s1:#2a78d6;--s2:#eb6834;--err:#b42318;--err-bg:#fdf0ee;--code:#f0efea}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:dark;--page:#0d0d0d;--surface:#1a1a19;--ink:#f0efec;--ink-2:#c3c2b7;--muted:#a3a29b;--axis:#898781;--grid:#2c2c2a;--base:#383835;--ring:rgba(255,255,255,.10);
-  --s1:#3987e5;--s2:#d95926;--err:#ff8a80;--err-bg:#2a1615;--code:#262624}}
-:root[data-theme="dark"]{color-scheme:dark;--page:#0d0d0d;--surface:#1a1a19;--ink:#f0efec;--ink-2:#c3c2b7;--muted:#a3a29b;--axis:#898781;--grid:#2c2c2a;--base:#383835;--ring:rgba(255,255,255,.10);
-  --s1:#3987e5;--s2:#d95926;--err:#ff8a80;--err-bg:#2a1615;--code:#262624}
+/* Dark is the default; [data-theme="light"] is the toggle's other state. Brand: the logo's
+   magenta #CF27E0 is series 1 in both modes; teal is series 2. The pair passes the dataviz
+   validator (lightness band, CVD, normal-vision, 3:1 contrast) on each mode's surface. */
+:root{color-scheme:dark;--page:#120f15;--surface:#1b1720;--ink:#f4eff6;--ink-2:#c9c0cd;--muted:#a39aa8;--axis:#8d8492;--grid:#2e2833;--base:#443c4a;--ring:rgba(255,255,255,.10);
+  --s1:#CF27E0;--s2:#16A08F;--accent:#E27AF0;--brand:#CF27E0;--err:#ff8a80;--err-bg:#2c1518;--code:#2a2430;--logo-ink:#f2f2f2}
+:root[data-theme="light"]{color-scheme:light;--page:#f7f2f8;--surface:#fdfbfd;--ink:#120f15;--ink-2:#4f4754;--muted:#6e6573;--axis:#857c8a;--grid:#ebe3ee;--base:#cfc5d3;--ring:rgba(18,15,21,.10);
+  --s1:#CF27E0;--s2:#0E9F8E;--accent:#A11AB0;--brand:#CF27E0;--err:#b42318;--err-bg:#fdf0ee;--code:#f1e9f3;--logo-ink:#000000}
 *{box-sizing:border-box}
 body{margin:0;background:var(--page);color:var(--ink);font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
 main{max-width:1040px;margin:0 auto;padding:32px 16px 64px}
@@ -280,26 +303,33 @@ a{color:inherit;text-underline-offset:2px}
 code{font:.88em ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--code);padding:1px 4px;border-radius:4px}
 h1{font-size:2rem;margin:.1em 0 .1em;letter-spacing:-.01em}
 h2{font-size:1.15rem;margin:0 0 12px}
+a:hover{color:var(--accent)}
 h3{font-size:1rem;margin:0}
-.eyebrow{margin:0;color:var(--muted);font-size:.8rem;text-transform:uppercase;letter-spacing:.08em}
+.top{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:20px}
+.logo{display:block;flex:none}
+.logo .wordmark{fill:var(--logo-ink)}
+.logo-text{margin:0;font-size:1.6rem;font-weight:700;color:var(--brand)}
+.theme{font:inherit;font-size:.85rem;color:var(--ink-2);background:var(--surface);border:1px solid var(--ring);border-radius:999px;padding:6px 14px;cursor:pointer}
+.theme:hover{color:var(--ink);border-color:var(--accent)}
+.theme:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .sub,.stamp,.note,figcaption p{color:var(--ink-2);margin:.25em 0}
 .stamp{font-size:.85rem;color:var(--muted)}
 .n{color:var(--muted);font-weight:500;margin-left:4px}
-header{margin-bottom:24px}
+header{margin-bottom:24px;padding-bottom:20px;border-bottom:2px solid var(--brand)}
 .chips{list-style:none;padding:0;margin:12px 0;display:flex;flex-wrap:wrap;gap:8px}
 .chip{background:var(--surface);border:1px solid var(--ring);border-radius:999px;padding:4px 12px;color:var(--ink-2)}
-.chip b{color:var(--ink)}
+.chip b{color:var(--accent)}
 section,figure{background:var(--surface);border:1px solid var(--ring);border-radius:12px;padding:20px;margin:0 0 16px}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 .grid2>section{margin:0}
 @media (max-width:760px){.grid2{grid-template-columns:1fr}}
 .cards{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
-.card{border:1px solid var(--ring);border-radius:10px;padding:12px 14px}
+.card{border:1px solid var(--ring);border-top:3px solid var(--brand);border-radius:10px;padding:12px 14px}
 .card a{font-weight:600;text-decoration:none}
-.card a:hover{text-decoration:underline}
+.card a:hover{text-decoration:underline;text-decoration-color:var(--accent)}
 .id{color:var(--muted);font-weight:500}
 .meta,.repos{margin:6px 0 0;font-size:.88rem;color:var(--ink-2)}
-.st{font-weight:600;color:var(--ink)}
+.st{font-weight:600;color:var(--accent)}
 .items{margin:8px 0 12px;padding-left:20px}
 .items li{margin:2px 0}
 details>summary{cursor:pointer;list-style:none}
@@ -312,7 +342,7 @@ section h3{margin-top:12px}
 figure{margin:0 0 16px}
 figcaption{margin-bottom:8px}
 .plot{overflow-x:auto;-webkit-overflow-scrolling:touch}
-svg{width:100%;min-width:560px;height:auto;display:block}
+.plot svg{width:100%;min-width:560px;height:auto;display:block}
 svg text{font:12px system-ui,-apple-system,sans-serif}
 .axis{fill:var(--axis)} .lab{fill:var(--ink-2)} .val{fill:var(--ink)}
 .grid{stroke:var(--grid);stroke-width:1} .base{stroke:var(--base);stroke-width:1}
@@ -329,9 +359,26 @@ th,td{text-align:left;padding:4px 8px;border-bottom:1px solid var(--grid)}
 th{color:var(--muted);font-weight:500}
 `;
 
+// The choice is a per-viewer convenience, so browser storage is the right home for it — it is
+// never data the dashboard reports. Storage can be unavailable (private window, file:// rules);
+// then the toggle still works for the visit, it just isn't remembered.
+const THEME_KEY = 'orbex-dashboard-theme';
+const TOGGLE = `(function(){
+  var root=document.documentElement, b=document.querySelector('.theme');
+  if(!b) return;
+  function label(){var d=root.dataset.theme!=='light';b.textContent=d?'\u2600 Light mode':'\u263E Dark mode';b.setAttribute('aria-label',d?'Switch to light mode':'Switch to dark mode');}
+  b.hidden=false; label();
+  b.addEventListener('click',function(){
+    root.dataset.theme=root.dataset.theme==='light'?'dark':'light'; label();
+    try{localStorage.setItem(${JSON.stringify(THEME_KEY)},root.dataset.theme)}catch(e){}
+  });
+})();`;
+
 const html = `<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${esc(NAME)} — progress</title><style>${CSS}</style></head>
+<html lang="en" data-theme="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${esc(NAME)} — progress</title>
+<script>try{var t=localStorage.getItem(${JSON.stringify(THEME_KEY)});if(t==='light'||t==='dark')document.documentElement.dataset.theme=t}catch(e){}</script>
+<style>${CSS}</style></head>
 <body><main>
 ${header()}
 ${inFlight()}
@@ -341,7 +388,9 @@ ${timeline()}
 <div class="grid2">${inbox()}${memory()}</div>
 ${backlog()}
 ${problems()}
-</main></body></html>
+</main>
+<script>${TOGGLE}</script>
+</body></html>
 `;
 
 writeFileSync(OUT, html);

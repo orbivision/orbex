@@ -103,7 +103,8 @@ node scripts/dashboard.mjs --open     # or --out file.html; --no-gh to skip the 
 
 <img src="assets/dashboard-sample.png" alt="The dashboard rendered from the sample workspace: in-flight project cards, a weekly throughput chart, a cycle-time distribution and a project timeline" width="720">
 
-One self-contained HTML file — no JavaScript, no network, light and dark — showing what's in
+One self-contained HTML file — no network, the Orbex logo inlined, dark by default with a
+light/dark toggle (the page's only JavaScript; it remembers your choice) — showing what's in
 flight and for how long, projects opened and closed per week, how long work takes from plan to
 done, a timeline of recent projects, and the same backlog, inbox and memory-review lists as
 `/o-next`.
