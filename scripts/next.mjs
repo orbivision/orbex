@@ -23,9 +23,14 @@
 import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import path from 'node:path';
-import { resolveWorkspace } from './lib/workspace.mjs';
+import { resolveWorkspace, projectKey, projectDirRe } from './lib/workspace.mjs';
 
 const { root: REPO } = resolveWorkspace();
+// ORBI-86: the key is the workspace's, not ours. An ambiguous key is fatal here — a list whose
+// job is completeness must not silently show zero projects.
+const KEY = projectKey(REPO);
+if (KEY.error) { console.error(`next.mjs: ${KEY.error}`); process.exit(1); }
+const PROJECT_DIR = projectDirRe(KEY.key);
 const OPEN_STATUSES = ['blocked', 'active', 'open'];
 const BACKLOG_SECTIONS = ['Now', 'Soon', 'Someday'];
 // ORBI-74. A GUESS, mirrored from doctor.mjs's REVIEW_WEEKS — no evidence exists for the right
@@ -38,7 +43,7 @@ function openProjects() {
   if (!existsSync(dir)) return [];
   const out = [];
   for (const d of readdirSync(dir, { withFileTypes: true })) {
-    if (!d.isDirectory() || !/^ORBI-\d+$/.test(d.name)) continue;
+    if (!d.isDirectory() || !PROJECT_DIR.test(d.name)) continue;
     const name = ['plan.md', 'recommendation.md'].find((f) =>
       existsSync(path.join(dir, d.name, f)));
     if (!name) continue;

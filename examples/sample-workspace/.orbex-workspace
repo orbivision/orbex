@@ -1,0 +1,6 @@
+# Marker: an Orbex workspace root. This one is FABRICATED — a sample for the README and a
+# fixture proving the scripts work with a project key that isn't the author's.
+#
+# Try it from the orbex repo root:
+#   ORBEX_WORKSPACE=examples/sample-workspace node scripts/dashboard.mjs --no-gh --open
+key: DEMO

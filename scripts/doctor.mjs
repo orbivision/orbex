@@ -24,7 +24,7 @@ import { readFileSync, existsSync, readdirSync, lstatSync, realpathSync, statSyn
 import { execFileSync } from 'node:child_process';
 import { homedir } from 'node:os';
 import path from 'node:path';
-import { resolveWorkspace, resolveEcosystemRoot, readMarker } from './lib/workspace.mjs';
+import { resolveWorkspace, resolveEcosystemRoot, readMarker, projectKey, projectDirRe } from './lib/workspace.mjs';
 
 // Derived, never written down. The tool whose headline check is "did a path move?" must
 // not itself contain a hardcoded path — that is exactly the ORBI-65 root cause.
@@ -38,6 +38,11 @@ const HOME = homedir();
 // May be null: a workspace governing nothing but itself is valid, and is what the machinery
 // repo is. Every use below has to cope with that rather than assume an ecosystem exists.
 const { root: ORBI, how: ORBI_HOW, missing: ORBI_MISSING } = resolveEcosystemRoot(REPO);
+
+// ORBI-86: the workspace's project key. An `error` here is a finding (frontmatter check), not
+// a throw — this script runs under a SessionStart hook.
+const KEY = projectKey(REPO);
+const PROJECT_DIR = projectDirRe(KEY.key);
 
 const OPEN_STATUSES = ['blocked', 'active', 'open'];
 const ALL_STATUSES = [...OPEN_STATUSES, 'done', 'dropped'];
@@ -163,7 +168,7 @@ function planFiles() {
   if (!existsSync(dir)) return [];
   const out = [];
   for (const d of readdirSync(dir, { withFileTypes: true })) {
-    if (!d.isDirectory() || !/^ORBI-\d+$/.test(d.name)) continue;
+    if (!d.isDirectory() || !PROJECT_DIR.test(d.name)) continue;
     const name = ['plan.md', 'recommendation.md'].find((f) =>
       existsSync(path.join(dir, d.name, f)));
     out.push({ id: d.name, name, file: name && path.join(dir, d.name, name) });
@@ -399,6 +404,7 @@ const CHECKS = [
     id: 'frontmatter',
     run() {
       const findings = [];
+      if (KEY.error) findings.push(KEY.error);
       const plans = planFiles();
       const ids = new Set(plans.map((p) => p.id));
       for (const p of plans) {
@@ -420,7 +426,7 @@ const CHECKS = [
         }
         if (fm.epic && !ids.has(fm.epic)) findings.push(`${at}: epic ${fm.epic} does not exist`);
       }
-      return { findings, summary: `${plans.length} plans valid` };
+      return { findings, summary: `${plans.length} plans valid (key ${KEY.key ?? "—"}: ${KEY.how})` };
     },
   },
 
@@ -581,7 +587,7 @@ const CHECKS = [
         // anything without implying a duplicate.
         if (!section || /accepted/i.test(section)) return;
         if (/^-\s+\[ \]/.test(line)) items++;
-        for (const id of line.match(/ORBI-\d+/g) ?? []) {
+        for (const id of (KEY.key && line.match(new RegExp(`\\b${KEY.key}-\\d+\\b`, 'g'))) || []) {
           if (OPEN_STATUSES.includes(status.get(id))) {
             findings.push(`BACKLOG.md:${i + 1}: names ${id}, which is ${status.get(id)} — the plan is the record now; delete the line`);
           }

@@ -48,6 +48,9 @@ Orbex keeps them apart, and gives each one a home that a session can find automa
   valid frontmatter, no stale absolute paths.
 - **Three lifecycle hooks** that run the doctor at session start, warn when you're behind
   `origin`, and warn about uncommitted memory when a turn ends.
+- **A progress dashboard.** `node scripts/dashboard.mjs --open` writes a static page of what's in
+  flight, throughput, cycle time and a timeline — generated from the same sources as the index,
+  never stored. [More below.](#progress-dashboard)
 
 No dependencies, no `package.json`, no build. Node and git are the whole toolchain.
 
@@ -59,7 +62,7 @@ Clone this repo, then create a workspace **beside** it:
 git clone https://github.com/orbivision/orbex.git
 mkdir my-workspace && cd my-workspace && git init
 
-touch .orbex-workspace                       # the marker: this is a workspace root
+printf 'key: KEY\n' > .orbex-workspace       # the marker; plans live at projects/KEY-N/
 mkdir -p projects context/memory .claude .codex
 ln -s ../orbex/scripts scripts               # consume the machinery
 cp ../orbex/.claude/settings.json .claude/   # hook registration, Claude Code
@@ -75,6 +78,9 @@ node scripts/doctor.mjs                      # expect: all checks passed
 `bootstrap.sh` finds your workspace from the marker above your current directory, so run it
 **from inside the workspace** — that is what makes `../orbex/...` the right thing to type.
 
+Pick your own `KEY` (uppercase letters and digits — `ACME`, `WEB2`) and use the same one in
+both files. Left out of the marker, it's inferred from `projects/` once plans exist.
+
 Then fill in your `CLAUDE.md` — your project key, the facts about your codebase an agent should
 always have — and start with `/o-plan`. [`CLAUDE.md`](CLAUDE.md) here is the full reference.
 
@@ -88,6 +94,33 @@ always have — and start with `/o-plan`. [`CLAUDE.md`](CLAUDE.md) here is the f
 | [`o-doctor`](.claude/skills/o-doctor/SKILL.md) | Reconcile the workspace against reality |
 
 Your workspace adds its own — the ones that know about *your* deploys, tests and releases.
+
+## Progress dashboard
+
+```bash
+node scripts/dashboard.mjs --open     # or --out file.html; --no-gh to skip the Issues inbox
+```
+
+<img src="assets/dashboard-sample.png" alt="The dashboard rendered from the sample workspace: in-flight project cards, a weekly throughput chart, a cycle-time distribution and a project timeline" width="720">
+
+One self-contained HTML file — no JavaScript, no network, light and dark — showing what's in
+flight and for how long, projects opened and closed per week, how long work takes from plan to
+done, a timeline of recent projects, and the same backlog, inbox and memory-review lists as
+`/o-next`.
+
+It is a **renderer, not a source.** It reads nothing itself: it runs `next.mjs --json` and
+`build-project-index.mjs --json` and draws what they say, and by default it writes to your temp
+directory rather than the repo. A dashboard that kept its own status would be a second list to
+drift — the exact thing the tracking design exists to prevent — so the only way to refresh it is
+to regenerate it. Errors are shown as errors: an unreachable GitHub reads "couldn't read the
+inbox", never "0 issues".
+
+The screenshot comes from [`examples/sample-workspace/`](examples/sample-workspace/), a
+fabricated workspace you can render yourself:
+
+```bash
+ORBEX_WORKSPACE=examples/sample-workspace node scripts/dashboard.mjs --no-gh --open
+```
 
 ## Two opinions worth knowing before you adopt it
 

@@ -7,14 +7,21 @@
 //
 //   node scripts/build-project-index.mjs          # write projects/README.md
 //   node scripts/build-project-index.mjs --check  # exit 1 if out of date (no write)
+//   node scripts/build-project-index.mjs --json   # every project as JSON on stdout (no write)
+//
+// --json exists for scripts/dashboard.mjs (ORBI-86), which needs DONE projects too — next.mjs
+// only lists open ones. The dashboard renders this; it never reads a plan itself.
 //
 // Dependency-free on purpose: this repo has no package.json and shouldn't need one.
 
 import { readFileSync, writeFileSync, existsSync, readdirSync } from 'node:fs';
 import path from 'node:path';
-import { resolveWorkspace } from './lib/workspace.mjs';
+import { resolveWorkspace, projectKey, projectDirRe } from './lib/workspace.mjs';
 
 const { root: REPO } = resolveWorkspace();
+const KEY = projectKey(REPO);
+if (KEY.error) { console.error(`build-project-index.mjs: ${KEY.error}`); process.exit(1); }
+const PROJECT_DIR = projectDirRe(KEY.key);
 const PROJECTS = path.join(REPO, 'projects');
 const OUT = path.join(PROJECTS, 'README.md');
 
@@ -43,7 +50,7 @@ function readFrontmatter(src) {
 
 function loadProjects() {
   const dirs = readdirSync(PROJECTS, { withFileTypes: true })
-    .filter((d) => d.isDirectory() && /^ORBI-\d+$/.test(d.name))
+    .filter((d) => d.isDirectory() && PROJECT_DIR.test(d.name))
     .map((d) => d.name)
     .sort((a, b) => Number(b.split('-')[1]) - Number(a.split('-')[1]));
 
@@ -136,6 +143,15 @@ function build({ projects, problems }) {
 }
 
 const data = loadProjects();
+
+if (process.argv.includes('--json')) {
+  // `file` is relative to projects/ in the markdown index; make it workspace-relative here so
+  // a consumer needn't know that.
+  const projects = data.projects.map((p) => ({ ...p, file: `projects/${p.file}` }));
+  process.stdout.write(JSON.stringify({ key: KEY.key, projects, problems: data.problems }, null, 2) + '\n');
+  process.exit(0);
+}
+
 const content = build(data);
 
 if (process.argv.includes('--check')) {

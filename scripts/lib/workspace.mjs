@@ -20,7 +20,7 @@
 // NOTHING HERE IS HARDCODED. Same rule as before: the tool whose headline check is "did a path
 // move?" must not itself contain a written-down path (ORBI-65 root cause).
 
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
@@ -104,6 +104,50 @@ export function resolveEcosystemRoot(workspace) {
   }
 
   return { root: null, how: 'not declared — this workspace governs no ecosystem' };
+}
+
+/**
+ * The workspace's project key — the `KEY` in `projects/KEY-N/`. ORBI-86.
+ *
+ * Until ORBI-86 every script matched `/^ORBI-\d+$/`, so the "generic" machinery only worked
+ * for the one workspace whose key happened to be ORBI. Resolution order:
+ *   1. `key:` in the marker — explicit, and what the README tells a new workspace to set
+ *   2. inferred from `projects/` when every numbered directory shares ONE prefix
+ *
+ * **Never defaults to ORBI.** That default is the defect this replaces. With no projects at all
+ * there is nothing to key, which is valid (`{ key: null }`); mixed prefixes are ambiguous, and
+ * the answer is an `error` the caller must surface — never a guess.
+ *
+ * Never throws: doctor.mjs runs under a SessionStart hook, so this reports rather than raises.
+ * Returns { key, how, error? }.
+ */
+export function projectKey(workspace) {
+  const declared = readMarker(workspace).key;
+  if (declared) {
+    return /^[A-Z][A-Z0-9]*$/.test(declared)
+      ? { key: declared, how: `${MARKER}: key` }
+      : { key: null, how: `${MARKER}: key`, error: `key "${declared}" in ${MARKER} must be uppercase letters/digits, e.g. ORBI` };
+  }
+
+  let names = [];
+  try {
+    names = readdirSync(path.join(workspace, 'projects'), { withFileTypes: true })
+      .filter((d) => d.isDirectory()).map((d) => d.name);
+  } catch { /* no projects/ — nothing to key */ }
+  const prefixes = new Set(names.map((n) => n.match(/^([A-Z][A-Z0-9]*)-\d+$/)?.[1]).filter(Boolean));
+
+  if (prefixes.size === 1) return { key: [...prefixes][0], how: 'inferred from projects/' };
+  if (prefixes.size === 0) return { key: null, how: 'no numbered projects yet' };
+  return {
+    key: null,
+    how: 'inferred from projects/',
+    error: `projects/ mixes keys (${[...prefixes].sort().join(', ')}) — add \`key: <KEY>\` to ${MARKER}`,
+  };
+}
+
+/** `/^KEY-\d+$/` for directory names; matches nothing when there is no key. */
+export function projectDirRe(key) {
+  return key ? new RegExp(`^${key}-\\d+$`) : /(?!)/;
 }
 
 /**

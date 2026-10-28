@@ -56,14 +56,17 @@ A workspace is a git repo with a `.orbex-workspace` marker at its root and this 
 The marker is how every script finds the tree it operates on, and it carries optional settings:
 
 ```
+key:            ACME              # plans live at projects/ACME-N/
 ecosystem_root: ../some-dir       # the repos the work is actually about
 ecosystem_doc:  context/arch.md   # linked into ecosystem_root as CLAUDE.md
 ```
 
-Both are optional. A workspace that governs nothing but itself simply omits them.
+All three are optional. A workspace that governs nothing but itself omits the ecosystem pair.
 
-**Declare your project key in your workspace's own `CLAUDE.md`** — the skills write `<KEY>-N`,
-and that line is what resolves it.
+**Declare your project key in two places, the same in both.** The marker's `key:` is what the
+scripts read; left out, they infer it from `projects/` when every numbered directory shares one
+prefix, and fail loudly when they don't — they never assume one. The line in your workspace's own
+`CLAUDE.md` is what the skills read when they write `<KEY>-N`.
 
 Then run `context/bootstrap.sh` from your workspace. It is idempotent, it moves real files aside
 rather than overwriting them, and it wires up:
@@ -134,6 +137,7 @@ Three places, and the split is deliberate — **status is derived, never maintai
 |---|---|---|
 | `projects/<KEY>-N/plan.md` | The work; `status` in its frontmatter | Hand — but *inside* the artifact it describes, so it can't drift from it |
 | `projects/README.md` | Index, in-flight first | **Generated** — `node scripts/build-project-index.mjs` |
+| the dashboard | Progress page — throughput, cycle time, timeline | **Generated on demand** — `node scripts/dashboard.mjs --open`, written to a temp file. A renderer of the two scripts' `--json`; it never reads a plan and is never committed |
 | `BACKLOG.md` | Ideas that aren't projects yet | Hand. The **only** hand-maintained list |
 
 Plus a capture inbox: any open GitHub Issue on the workspace's own repo, derived from its
