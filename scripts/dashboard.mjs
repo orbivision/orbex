@@ -290,12 +290,14 @@ function problems() {
 // ---- page -----------------------------------------------------------------------
 const CSS = `
 /* Dark is the default; [data-theme="light"] is the toggle's other state. Brand: the logo's
-   magenta #CF27E0 is series 1 in both modes; teal is series 2. The pair passes the dataviz
-   validator (lightness band, CVD, normal-vision, 3:1 contrast) on each mode's surface. */
+   magenta #CF27E0 is series 1 in both modes, burnt orange #D9681F series 2 (user's pick over
+   teal, amber, coral and lime). The pair passes the dataviz validator — lightness band, CVD
+   (27.6 deutan), normal-vision, 3:1 contrast — on each mode's surface. Blues all FAIL CVD
+   against this magenta (1.3–4.3): red-green colour-blind viewers see them as the same hue. */
 :root{color-scheme:dark;--page:#120f15;--surface:#1b1720;--ink:#f4eff6;--ink-2:#c9c0cd;--muted:#a39aa8;--axis:#8d8492;--grid:#2e2833;--base:#443c4a;--ring:rgba(255,255,255,.10);
-  --s1:#CF27E0;--s2:#16A08F;--accent:#E27AF0;--brand:#CF27E0;--err:#ff8a80;--err-bg:#2c1518;--code:#2a2430;--logo-ink:#f2f2f2}
+  --s1:#CF27E0;--s2:#D9681F;--accent:#E27AF0;--brand:#CF27E0;--err:#ff8a80;--err-bg:#2c1518;--code:#2a2430;--logo-ink:#f2f2f2}
 :root[data-theme="light"]{color-scheme:light;--page:#f7f2f8;--surface:#fdfbfd;--ink:#120f15;--ink-2:#4f4754;--muted:#6e6573;--axis:#857c8a;--grid:#ebe3ee;--base:#cfc5d3;--ring:rgba(18,15,21,.10);
-  --s1:#CF27E0;--s2:#0E9F8E;--accent:#A11AB0;--brand:#CF27E0;--err:#b42318;--err-bg:#fdf0ee;--code:#f1e9f3;--logo-ink:#000000}
+  --s1:#CF27E0;--s2:#D9681F;--accent:#A11AB0;--brand:#CF27E0;--err:#b42318;--err-bg:#fdf0ee;--code:#f1e9f3;--logo-ink:#000000}
 *{box-sizing:border-box}
 body{margin:0;background:var(--page);color:var(--ink);font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
 main{max-width:1040px;margin:0 auto;padding:32px 16px 64px}
