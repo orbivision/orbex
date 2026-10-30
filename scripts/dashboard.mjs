@@ -67,6 +67,19 @@ function git(...a) {
 const SHA = git('rev-parse', '--short', 'HEAD');
 const DIRTY = !!git('status', '--porcelain');
 
+// Plan links go to GitHub, which renders the markdown, rather than to file:// — a browser shows
+// a local .md as raw text at best, and Safari refuses file→file navigation outright, so those
+// links looked dead. Derived from the origin remote like next.mjs's inbox, never written down.
+// `--show-prefix` covers a workspace that is a subdirectory of its repo (the sample one).
+// No GitHub origin → file:// is still the best there is.
+const GH = (() => {
+  const m = git('remote', 'get-url', 'origin')?.match(/github\.com[:/]([^/:]+)\/([^/]+?)(?:\.git)?$/);
+  const branch = git('rev-parse', '--abbrev-ref', 'HEAD');
+  return m && branch && branch !== 'HEAD'
+    ? `https://github.com/${m[1]}/${m[2]}/blob/${encodeURIComponent(branch)}/${git('rev-parse', '--show-prefix') ?? ''}`
+    : null;
+})();
+
 // ---- dates -------------------------------------------------------------------
 // Frontmatter dates are local calendar days. Treat them as whole UTC days so "opened and closed
 // the same day" is 0 in every timezone, rather than a fraction that rounds either way.
@@ -81,7 +94,7 @@ const short = (t) => new Date(t).toLocaleDateString('en', { month: 'short', day:
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 // Backlog/inbox titles carry markdown backticks; render them as code, everything else as text.
 const md = (s) => esc(s).replace(/`([^`]+)`/g, '<code>$1</code>');
-const planHref = (file) => pathToFileURL(path.join(REPO, file)).href;
+const planHref = (file) => (GH ? GH + file.split('/').map(encodeURIComponent).join('/') : pathToFileURL(path.join(REPO, file)).href);
 const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
 
 function table(head, rows) {
