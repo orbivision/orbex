@@ -93,6 +93,7 @@ always have — and start with `/o-plan`. [`CLAUDE.md`](CLAUDE.md) here is the f
 | [`o-dashboard`](.claude/skills/o-dashboard/SKILL.md) | Generate the [progress dashboard](#progress-dashboard) and open it in the browser |
 | [`o-ship`](.claude/skills/o-ship/SKILL.md) | Verify it actually shipped, log what the plan got wrong, reconcile memory, close out |
 | [`o-doctor`](.claude/skills/o-doctor/SKILL.md) | Reconcile the workspace against reality |
+| [`o-help`](.claude/skills/o-help/SKILL.md) | List every skill command with a one-line summary, lifecycle first (`node scripts/help.mjs`) |
 
 Your workspace adds its own — the ones that know about *your* deploys, tests and releases.
 

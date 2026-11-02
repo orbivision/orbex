@@ -9,6 +9,11 @@
 #
 #   ecosystem_root: ../some-dir      # the repos the work is actually about
 #   ecosystem_doc:  context/arch.md  # linked into ecosystem_root as CLAUDE.md
+#   key:            ACME             # the project key; inferred from projects/ when omitted
+#   lifecycle:      o-plan, o-ship   # the skills every project passes through, in order —
+#                                    # /o-help shows them apart from the utilities
 #
 # This repo declares neither: it is a workspace that governs nothing but itself, which is a
 # valid state and the one the checks treat as "absent" rather than "broken".
+
+lifecycle: o-next, o-plan, o-ship

@@ -20,6 +20,10 @@ skill by matching what you asked against that one string. A description that onl
 skill *does* will not fire when it should, which is why the ones here also enumerate the
 situations and the phrasings.
 
+**Make its opening clause a summary that stands alone.** `/o-help` shows the `description` cut
+at its first ` — ` or the end of its first sentence, so "Start a new numbered project — pick the
+next number, …" reads well there and "Use when …" doesn't.
+
 ## What belongs in one
 
 A skill is a **procedure** — a sequence with an order that matters, too long to keep in context
@@ -30,7 +34,7 @@ of better.
 Write the traps, not just the steps. The steps are usually obvious in hindsight; the reason the
 obvious thing fails is not.
 
-## The five here
+## The six here
 
 | | |
 |---|---|
@@ -39,6 +43,7 @@ obvious thing fails is not.
 | [`o-dashboard`](o-dashboard/SKILL.md) | Generate and open the progress dashboard — throughput, cycle time, timeline — rebuilt every time |
 | [`o-ship`](o-ship/SKILL.md) | Verify it shipped, log what the plan got wrong, reconcile memory, close out |
 | [`o-doctor`](o-doctor/SKILL.md) | Reconcile the workspace against reality |
+| [`o-help`](o-help/SKILL.md) | List the skill commands, lifecycle apart from utilities — generated, never hand-written |
 
 These are the host-generic ones. The skills that know about *your* deploys, tests and releases
 belong in your own workspace, not here — `bootstrap.sh` links both sets into the personal skills
@@ -48,4 +53,5 @@ directory, so a session sees them together regardless of which repo they live in
 
 Create the directory and `SKILL.md`, add the matching symlink under `.agents/skills/`, and run
 `node scripts/doctor.mjs` — it checks that every skill is linked for both hosts and that nothing
-under `.agents/` is a real directory.
+under `.agents/` is a real directory. If every project passes through the new skill, add it to
+`lifecycle:` in `.orbex-workspace` so `/o-help` lists it with the lifecycle.
