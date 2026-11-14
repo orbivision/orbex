@@ -125,6 +125,9 @@ fabricated workspace you can render yourself:
 ORBEX_WORKSPACE=examples/sample-workspace node scripts/dashboard.mjs --no-gh --open
 ```
 
+Want it open in a tab and refreshing itself? [orbex-dashboard](https://github.com/orbivision/orbex-dashboard)
+is an optional add-on that serves the same picture as a live local web app, built from the same two producers.
+
 ## Two opinions worth knowing before you adopt it
 
 **The doctor has one severity tier.** Every finding fails the run. There is no warning level,
