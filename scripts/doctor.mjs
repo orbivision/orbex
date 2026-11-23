@@ -682,6 +682,28 @@ const CHECKS = [
       };
     },
   },
+
+  {
+    id: 'inbox',
+    // ORBI-92. inbox/ holds one captured item per file (the GitHub Issue's twin, in git), and
+    // next.mjs titles each from its `# ` line. A file without one still lists — under its
+    // filename, so it can't hide — but an unreadable title is fixable in seconds, which is the
+    // bar here. How LONG items sit untriaged is not checked: triage is work, not an invariant.
+    run() {
+      const dir = path.join(REPO, 'inbox');
+      if (!existsSync(dir)) return { findings: [], summary: 'no inbox/ in this workspace' };
+      const files = readdirSync(dir)
+        .filter((f) => !f.startsWith('.') && f.toLowerCase() !== 'readme.md');
+      const findings = [];
+      for (const f of files) {
+        if (!f.endsWith('.md')) { findings.push(`inbox/${f}: not a .md file — next.mjs won't list it`); continue; }
+        if (!/^#\s+\S/m.test(readFileSync(path.join(dir, f), 'utf8'))) {
+          findings.push(`inbox/${f}: no \`# title\` line`);
+        }
+      }
+      return { findings, summary: `${files.length} untriaged capture${files.length === 1 ? '' : 's'}` };
+    },
+  },
 ];
 
 // ---- run ---------------------------------------------------------------------

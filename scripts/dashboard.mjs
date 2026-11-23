@@ -275,15 +275,22 @@ function backlog() {
 
 function inbox() {
   // `--no-gh` is a choice, not a failure — say so plainly rather than in the error colour.
+  // Two sources (ORBI-92): inbox/ files, read locally, and GitHub Issues. Each reports its own
+  // error, so an offline `gh` never hides the files and an unreadable inbox/ never hides issues.
   const skipped = flag('--no-gh');
-  const body = skipped
-    ? `<p class="empty">Not checked (<code>--no-gh</code>).</p>`
-    : next.inboxError
-    ? `<p class="err"><b>Couldn't read the inbox:</b> ${esc(next.inboxError)}. This is not the same as empty.</p>`
-    : next.inbox.length
-      ? `<ul class="items">${next.inbox.map((i) => `<li><a href="${esc(i.url)}">#${esc(i.number)}</a> ${md(i.title)}</li>`).join('')}</ul><p class="note">Untriaged — a decision owed, not work to pick up.</p>`
-      : `<p class="empty">Empty — nothing untriaged.</p>`;
-  return `<section><h2>Inbox <span class="n">${next.inboxError ? '–' : next.inbox.length}</span></h2>${body}</section>`;
+  const item = (i) => i.source === 'file'
+    ? `<li><a href="${esc(planHref(i.file))}">file</a> ${md(i.title)}</li>`
+    : `<li><a href="${esc(i.url)}">#${esc(i.number)}</a> ${md(i.title)}</li>`;
+  const notes = [
+    next.inboxFilesError && `<p class="err"><b>Couldn't read inbox/:</b> ${esc(next.inboxFilesError)}. This is not the same as empty.</p>`,
+    skipped ? `<p class="empty">GitHub Issues not checked (<code>--no-gh</code>).</p>`
+      : next.inboxError && `<p class="err"><b>Couldn't read GitHub Issues:</b> ${esc(next.inboxError)}. This is not the same as empty.</p>`,
+  ].filter(Boolean).join('');
+  const body = next.inbox.length
+    ? `<ul class="items">${next.inbox.map(item).join('')}</ul><p class="note">Untriaged — a decision owed, not work to pick up.</p>`
+    : notes ? '' : `<p class="empty">Empty — nothing untriaged.</p>`;
+  const unknown = !skipped && next.inboxError && !next.inbox.length;
+  return `<section><h2>Inbox <span class="n">${unknown ? '–' : next.inbox.length}</span></h2>${notes}${body}</section>`;
 }
 
 function memory() {

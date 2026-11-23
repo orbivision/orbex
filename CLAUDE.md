@@ -140,9 +140,10 @@ Three places, and the split is deliberate — **status is derived, never maintai
 | the dashboard | Progress page — throughput, cycle time, timeline | **Generated on demand** — `node scripts/dashboard.mjs --open`, written to a temp file. A renderer of the two scripts' `--json`; it never reads a plan and is never committed |
 | `BACKLOG.md` | Ideas that aren't projects yet | Hand. The **only** hand-maintained list |
 
-Plus a capture inbox: any open GitHub Issue on the workspace's own repo, derived from its
-`origin` remote. Issues are an **inbox, never a tracker** — triage into the backlog or a project,
-then close.
+Plus a capture inbox, two ways in: one file per item in `inbox/` (what orbex-dashboard's Capture
+writes), and any open GitHub Issue on the workspace's own repo, derived from its `origin` remote.
+The inbox is **never a tracker** — triage into the backlog or a project, then delete the file or
+close the issue.
 
 **Why it's built this way:** an earlier version kept a hand-maintained status list separate from
 the work. It drifted far enough to mark a project "awaiting approval" on the day it shipped to

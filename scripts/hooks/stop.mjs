@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Stop hook: warn about uncommitted memory and a stale project index.
+// Stop hook: warn about uncommitted memory, uncommitted inbox/ captures, and a stale project index.
 //
 // Stop fires on EVERY turn end (including clear, resume, compact) — not once per session.
 // That makes naive warning the central risk here: a message shown on all twenty turns of a
@@ -111,6 +111,16 @@ if (memFiles.length) {
   for (const f of memFiles.slice(0, 5)) lines.push(`    ${f}`);
   if (memFiles.length > 5) lines.push(`    … and ${memFiles.length - 5} more`);
   lines.push('  commit them with the work — versioned memory that never gets committed is just memory');
+}
+
+// 1b. Uncommitted inbox/ captures (ORBI-92). A local dashboard writes captures into the working
+//     tree and deliberately never commits; until they are committed, the other laptop and a
+//     hosted dashboard can't see them — the same reason memory is versioned.
+const inb = run('git', ['status', '--porcelain', '--untracked-files=all', '--', 'inbox']);
+const inbFiles = inb.ok ? inb.out.split('\n').map((l) => l.trim()).filter(Boolean) : [];
+if (inbFiles.length) {
+  categories.push('inbox');
+  lines.push(`⚠ inbox/ has uncommitted captures (${inbFiles.length}) — commit them so other machines see them`);
 }
 
 // 2. Stale index. Reuse the generator's own --check; never reimplement it.
