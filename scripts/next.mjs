@@ -8,7 +8,9 @@
 // Sources, in priority order:
 //   1. Projects with a non-done status  — projects/ORBI-N/plan.md frontmatter
 //   2. BACKLOG.md                       — Now / Soon / Someday
-//   3. Every OPEN GitHub Issue          — captured, untriaged
+//   3. The inbox — captured, untriaged:
+//        a. every file in inbox/            — one file per item (ORBI-92)
+//        b. every OPEN GitHub Issue
 //
 // Note (3) is deliberately *not* filtered by the `inbox` label. Issues are an inbox,
 // never a tracker, so an open issue is untriaged by definition — and one captured from
@@ -111,6 +113,7 @@ function inbox() {
     ], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
     return {
       items: JSON.parse(raw).map((i) => ({
+        source: 'issue',
         ...i,
         labels: i.labels.map((l) => l.name),
         labelled: i.labels.some((l) => l.name === 'inbox'),
@@ -119,6 +122,58 @@ function inbox() {
     };
   } catch {
     return { items: [], error: 'could not reach GitHub (offline, `gh` not authed, or no origin remote)' };
+  }
+}
+
+// ---- 3b. inbox/ files ----------------------------------------------------------
+// ORBI-92. The GitHub Issue's twin, kept in git: one file per captured item, and being present
+// IS being untriaged — triage moves it into BACKLOG.md or a plan and deletes the file. One file
+// per item rather than lines in one file, because captures arrive from another machine (a hosted
+// dashboard committing to origin) while a laptop may be mid-edit: a new uniquely-named file can
+// never merge-conflict. No directory means nobody uses it — not an error.
+//
+//   ---
+//   captured: 2026-11-22T18:30:00Z
+//   ---
+//
+//   # The one-line idea
+//
+//   Optional notes.
+function parseInboxFile(name, src) {
+  let head = '';
+  let body = src;
+  if (src.startsWith('---\n')) {
+    const end = src.indexOf('\n---', 4);
+    if (end !== -1) { head = src.slice(4, end); body = src.slice(src.indexOf('\n', end + 4) + 1); }
+  }
+  const get = (k) => head.match(new RegExp(`^${k}:\\s*(.*)$`, 'm'))?.[1]?.trim();
+  const h = body.match(/^#\s+(.+)$/m);
+  const stem = name.replace(/\.md$/, '');
+  const fromName = stem.match(/^(\d{4}-\d{2}-\d{2})(?:T(\d{2})(\d{2}))?/);
+  const createdAt = get('captured')
+    ?? (fromName ? `${fromName[1]}T${fromName[2] ?? '00'}:${fromName[3] ?? '00'}:00Z` : null);
+  const notes = (h ? body.slice(body.indexOf(h[0]) + h[0].length) : body).trim();
+  return {
+    source: 'file',
+    file: `inbox/${name}`,
+    title: h?.[1].trim() ?? stem,
+    titled: !!h,
+    createdAt,
+    body: notes || null,
+  };
+}
+
+function inboxFiles() {
+  const dir = path.join(REPO, 'inbox');
+  if (!existsSync(dir)) return { items: [], error: null };
+  try {
+    const items = readdirSync(dir)
+      .filter((f) => f.endsWith('.md') && !f.startsWith('.') && f.toLowerCase() !== 'readme.md')
+      .map((f) => parseInboxFile(f, readFileSync(path.join(dir, f), 'utf8')))
+      .sort((a, b) => (a.createdAt ?? '').localeCompare(b.createdAt ?? '') || a.file.localeCompare(b.file));
+    return { items, error: null };
+  } catch (e) {
+    return { items: [], error: `could not read inbox/: ${e.message}` };
   }
 }
 
@@ -171,11 +226,14 @@ function memoryReview() {
 const useGh = !process.argv.includes('--no-gh');
 const projects = openProjects();
 const back = backlog();
-const { items: issues, error: ghError } = useGh ? inbox() : { items: [], error: 'skipped (--no-gh)' };
+const { items: issueItems, error: ghError } = useGh ? inbox() : { items: [], error: 'skipped (--no-gh)' };
+const { items: fileItems, error: filesError } = inboxFiles();
+// Files first: they are this workspace's own captures and need no network to be trusted.
+const issues = [...fileItems, ...issueItems];
 const { items: memDue, error: memError } = memoryReview();
 
 if (process.argv.includes('--json')) {
-  console.log(JSON.stringify({ projects, backlog: back, inbox: issues, inboxError: ghError, memoryReview: memDue, memoryReviewError: memError }, null, 2));
+  console.log(JSON.stringify({ projects, backlog: back, inbox: issues, inboxError: ghError, inboxFilesError: filesError, memoryReview: memDue, memoryReviewError: memError }, null, 2));
   process.exit(0);
 }
 
@@ -204,14 +262,19 @@ for (const s of BACKLOG_SECTIONS) {
 }
 
 L.push('');
-L.push(`INBOX — untriaged GitHub Issues (${issues.length})`);
-if (ghError) L.push(`  ${ghError}`);
+L.push(`INBOX — untriaged captures (${issues.length})`);
+if (filesError) L.push(`  ${filesError}`);
+for (const f of fileItems) {
+  L.push(`  · ${f.title}`);
+  L.push(`    ${(f.createdAt ?? '').slice(0, 10) || 'undated'} · ${f.file}`);
+}
+if (ghError) L.push(`  GitHub Issues: ${ghError}`);
 else if (!issues.length) L.push('  empty');
-for (const i of issues) {
+for (const i of issueItems) {
   L.push(`  #${String(i.number).padEnd(4)} ${i.title}${i.labelled ? '' : '   ← no `inbox` label'}`);
   L.push(`  ${' '.repeat(5)} ${i.createdAt.slice(0, 10)} · ${i.url}`);
 }
-const unlabelled = issues.filter((i) => !i.labelled).length;
+const unlabelled = issueItems.filter((i) => !i.labelled).length;
 if (unlabelled) {
   L.push('');
   L.push(`  ${unlabelled} open issue${unlabelled === 1 ? '' : 's'} missing the \`inbox\` label — listed anyway.`);
@@ -235,7 +298,8 @@ if (memDue.length) {
 
 L.push('');
 L.push('-'.repeat(60));
-L.push('Triage inbox items into BACKLOG.md or a project, then close the issue.');
+L.push('Triage inbox items into BACKLOG.md or a project, then delete the inbox/ file');
+L.push('or close the issue.');
 L.push('Details for any backlog line live in BACKLOG.md.');
 L.push('');
 console.log(L.join('\n'));
